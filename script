@@ -1,4 +1,4 @@
-local password = "key_381947103423"
+local password = "Key_123456789"
 local attempts = 0
 
 -- Create GUI
