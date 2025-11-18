@@ -132,8 +132,8 @@ end)
 -- ===== Copy Button Logic =====
 copyButton.MouseButton1Click:Connect(function()
 	status.Text = "📁 Copying game with scripts..."
-	log("⛔Started copying game...")
-
+	log("💫Started copying game...")
+	log("🌐Loading...")
 	local success, err = pcall(function()
 		local saveinstance = loadstring(game:HttpGet("https://raw.githubusercontent.com/luau/SynSaveInstance/main/saveinstance.luau"))()
 		saveinstance({
