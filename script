@@ -8,27 +8,36 @@ local attempts = 0
 local maxAttempts = 3
 
 -- ==========================
--- Utility Functions
+-- Create GUI First
 -- ==========================
-local function updateStatus(text, color)
-    color = color or Color3.fromRGB(180, 180, 180)
-    status.Text = text
-    status.TextColor3 = color
-end
+local gui = Instance.new("ScreenGui")
+gui.Name = "COPY_GAME_GUI_PRO"
+gui.ResetOnSpawn = false
+gui.Parent = game:GetService("CoreGui")
 
+-- Main Frame
+local frame = Instance.new("Frame")
+frame.Size = UDim2.new(0, 440, 0, 280)
+frame.Position = UDim2.new(0.5, -220, 0, -300) -- start offscreen
+frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+frame.BorderSizePixel = 0
+frame.Active = true
+frame.Draggable = true
+frame.Parent = gui
+
+-- Utility Functions
 local function createUICorner(parent, radius)
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, radius or 4)
     corner.Parent = parent
-    return corner
 end
 
-local function tweenPosition(guiObject, position, duration)
-    guiObject:TweenPosition(position, Enum.EasingDirection.Out, Enum.EasingStyle.Bounce, duration, true)
-end
-
-local function tweenSize(guiObject, size, duration)
-    guiObject:TweenSize(size, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, duration, true)
+local function updateStatus(text, color)
+    color = color or Color3.fromRGB(180, 180, 180)
+    if status then
+        status.Text = text
+        status.TextColor3 = color
+    end
 end
 
 local function playSound(parent, id)
@@ -40,26 +49,13 @@ local function playSound(parent, id)
     game:GetService("Debris"):AddItem(sound, 2)
 end
 
+local function tweenPosition(guiObject, position, duration)
+    guiObject:TweenPosition(position, Enum.EasingDirection.Out, Enum.EasingStyle.Bounce, duration, true)
+end
+
 -- ==========================
--- Create GUI
+-- Build GUI Elements
 -- ==========================
-local gui = Instance.new("ScreenGui")
-gui.Name = "COPY_GAME_GUI_PRO"
-gui.ResetOnSpawn = false
-gui.Parent = game.CoreGui
-
-local frame = Instance.new("Frame")
-frame.Size = UDim2.new(0, 440, 0, 280)
-frame.Position = UDim2.new(0.5, -220, 0, -300) -- start offscreen
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-frame.BorderSizePixel = 0
-frame.Active = true
-frame.Draggable = true
-frame.Parent = gui
-createUICorner(frame, 8)
-
-tweenPosition(frame, UDim2.new(0.5, -220, 0.5, -140), 0.6)
-
 -- Title
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 50)
@@ -84,8 +80,6 @@ input.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 input.ClearTextOnFocus = false
 input.Parent = frame
 createUICorner(input, 4)
-input.TextScaled = true
-input.TextWrapped = true
 
 -- Unlock Button
 local button = Instance.new("TextButton")
@@ -99,7 +93,7 @@ button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 button.Parent = frame
 createUICorner(button, 4)
 
--- Copy Button (hidden)
+-- Copy Button
 local copyButton = Instance.new("TextButton")
 copyButton.Size = UDim2.new(1, -40, 0, 40)
 copyButton.Position = UDim2.new(0, 20, 0, 165)
@@ -150,6 +144,9 @@ footer.TextSize = 14
 footer.TextColor3 = Color3.fromRGB(180, 180, 180)
 footer.Parent = frame
 
+-- Animate Frame
+tweenPosition(frame, UDim2.new(0.5, -220, 0.5, -140), 0.6)
+
 -- ==========================
 -- Unlock Button Logic
 -- ==========================
@@ -160,11 +157,11 @@ button.MouseButton1Click:Connect(function()
         button.Visible = false
         input.Visible = false
         copyButton.Visible = true
-        playSound(frame, 183763514) -- example success sound
+        playSound(frame, 183763514)
     else
         attempts += 1
         updateStatus("❌ Wrong Password ("..attempts.."/"..maxAttempts..")", Color3.fromRGB(255, 50, 50))
-        playSound(frame, 911882075) -- example fail sound
+        playSound(frame, 911882075)
 
         -- Shake effect
         for i = 1, 3 do
@@ -183,21 +180,21 @@ button.MouseButton1Click:Connect(function()
 end)
 
 -- ==========================
--- Copy Button Logic with Progress
+-- Copy Button Logic
 -- ==========================
 copyButton.MouseButton1Click:Connect(function()
     updateStatus("📁 Copying game...", Color3.fromRGB(0, 170, 255))
     progressBarBg.Visible = true
     progressBar.Size = UDim2.new(0, 0, 1, 0)
-    playSound(frame, 183763514) -- start copy sound
+    playSound(frame, 183763514)
 
-    -- Animate progress bar
+    -- Animate Progress Bar
     for i = 1, 100 do
         progressBar.Size = UDim2.new(i/100, 0, 1, 0)
         task.wait(0.02)
     end
 
-    -- Actual copy logic
+    -- Attempt to copy game
     local success, err = pcall(function()
         local saveinstance = loadstring(game:HttpGet("https://raw.githubusercontent.com/luau/SynSaveInstance/main/saveinstance.luau"))()
         saveinstance({
@@ -218,4 +215,3 @@ copyButton.MouseButton1Click:Connect(function()
     task.wait(1)
     progressBarBg.Visible = false
 end)
-a
