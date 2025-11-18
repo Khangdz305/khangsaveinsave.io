@@ -1,23 +1,64 @@
+-- ==========================
+-- 🧠 KHANG DECOMPILER PREMIUM v3
+-- SUPER PROFESSIONAL VERSION
+-- ==========================
+
 local password = "Key_123456789"
 local attempts = 0
+local maxAttempts = 3
 
+-- ==========================
+-- Utility Functions
+-- ==========================
+local function updateStatus(text, color)
+    color = color or Color3.fromRGB(180, 180, 180)
+    status.Text = text
+    status.TextColor3 = color
+end
+
+local function createUICorner(parent, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius or 4)
+    corner.Parent = parent
+    return corner
+end
+
+local function tweenPosition(guiObject, position, duration)
+    guiObject:TweenPosition(position, Enum.EasingDirection.Out, Enum.EasingStyle.Bounce, duration, true)
+end
+
+local function tweenSize(guiObject, size, duration)
+    guiObject:TweenSize(size, Enum.EasingDirection.Out, Enum.EasingStyle.Quad, duration, true)
+end
+
+local function playSound(parent, id)
+    local sound = Instance.new("Sound")
+    sound.SoundId = "rbxassetid://"..id
+    sound.Volume = 0.7
+    sound.Parent = parent
+    sound:Play()
+    game:GetService("Debris"):AddItem(sound, 2)
+end
+
+-- ==========================
 -- Create GUI
+-- ==========================
 local gui = Instance.new("ScreenGui")
-gui.Name = "COPY GAME BY KHANGYEUAI190"
+gui.Name = "COPY_GAME_GUI_PRO"
+gui.ResetOnSpawn = false
 gui.Parent = game.CoreGui
 
--- Main Frame
 local frame = Instance.new("Frame")
 frame.Size = UDim2.new(0, 440, 0, 280)
-frame.Position = UDim2.new(0.5, -220, 0.5, -140)
+frame.Position = UDim2.new(0.5, -220, 0, -300) -- start offscreen
 frame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
 frame.BorderSizePixel = 0
 frame.Active = true
 frame.Draggable = true
 frame.Parent = gui
+createUICorner(frame, 8)
 
-local corner = Instance.new("UICorner", frame)
-corner.CornerRadius = UDim.new(0, 8)
+tweenPosition(frame, UDim2.new(0.5, -220, 0.5, -140), 0.6)
 
 -- Title
 local title = Instance.new("TextLabel")
@@ -28,11 +69,9 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 20
 title.TextColor3 = Color3.new(1, 1, 1)
 title.Parent = frame
+createUICorner(title, 8)
 
-local titleCorner = Instance.new("UICorner", title)
-titleCorner.CornerRadius = UDim.new(0, 8)
-
--- Input
+-- Password Input
 local input = Instance.new("TextBox")
 input.Size = UDim2.new(1, -40, 0, 35)
 input.Position = UDim2.new(0, 20, 0, 65)
@@ -44,9 +83,9 @@ input.TextColor3 = Color3.new(1, 1, 1)
 input.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
 input.ClearTextOnFocus = false
 input.Parent = frame
-
-local inputCorner = Instance.new("UICorner", input)
-inputCorner.CornerRadius = UDim.new(0, 4)
+createUICorner(input, 4)
+input.TextScaled = true
+input.TextWrapped = true
 
 -- Unlock Button
 local button = Instance.new("TextButton")
@@ -58,9 +97,7 @@ button.TextSize = 18
 button.TextColor3 = Color3.new(1, 1, 1)
 button.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
 button.Parent = frame
-
-local buttonCorner = Instance.new("UICorner", button)
-buttonCorner.CornerRadius = UDim.new(0, 4)
+createUICorner(button, 4)
 
 -- Copy Button (hidden)
 local copyButton = Instance.new("TextButton")
@@ -73,14 +110,27 @@ copyButton.TextColor3 = Color3.new(1, 1, 1)
 copyButton.BackgroundColor3 = Color3.fromRGB(0, 200, 100)
 copyButton.Visible = false
 copyButton.Parent = frame
+createUICorner(copyButton, 4)
 
-local copyCorner = Instance.new("UICorner", copyButton)
-copyCorner.CornerRadius = UDim.new(0, 4)
+-- Progress Bar
+local progressBarBg = Instance.new("Frame")
+progressBarBg.Size = UDim2.new(1, -40, 0, 15)
+progressBarBg.Position = UDim2.new(0, 20, 0, 215)
+progressBarBg.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+progressBarBg.Visible = false
+progressBarBg.Parent = frame
+createUICorner(progressBarBg, 4)
+
+local progressBar = Instance.new("Frame")
+progressBar.Size = UDim2.new(0, 0, 1, 0)
+progressBar.BackgroundColor3 = Color3.fromRGB(0, 170, 255)
+progressBar.Parent = progressBarBg
+createUICorner(progressBar, 4)
 
 -- Status Label
 local status = Instance.new("TextLabel")
 status.Size = UDim2.new(1, -40, 0, 30)
-status.Position = UDim2.new(0, 20, 0, 215)
+status.Position = UDim2.new(0, 20, 0, 240)
 status.BackgroundTransparency = 1
 status.Text = "🔧 Status: Waiting for password..."
 status.Font = Enum.Font.Gotham
@@ -100,46 +150,72 @@ footer.TextSize = 14
 footer.TextColor3 = Color3.fromRGB(180, 180, 180)
 footer.Parent = frame
 
--- Unlock Button Function
+-- ==========================
+-- Unlock Button Logic
+-- ==========================
 button.MouseButton1Click:Connect(function()
-	if input.Text == password then
-		title.Text = "✅ Access Granted"
-		status.Text = "🔓 Unlocked. Click 'Copy with Scripts!'"
-		button.Visible = false
-		input.Visible = false
-		copyButton.Visible = true
-	else
-		attempts += 1
-		status.Text = "❌ Wrong Password ("..attempts.."/3)"
-		if attempts >= 3 then
-			title.Text = "⛔ Too Many Failed Attempts"
-			wait(1)
-			gui:Destroy()
-		end
-	end
+    if input.Text == password then
+        title.Text = "✅ Access Granted"
+        updateStatus("🔓 Unlocked. Click 'Copy with Scripts!'", Color3.fromRGB(0, 255, 100))
+        button.Visible = false
+        input.Visible = false
+        copyButton.Visible = true
+        playSound(frame, 183763514) -- example success sound
+    else
+        attempts += 1
+        updateStatus("❌ Wrong Password ("..attempts.."/"..maxAttempts..")", Color3.fromRGB(255, 50, 50))
+        playSound(frame, 911882075) -- example fail sound
+
+        -- Shake effect
+        for i = 1, 3 do
+            frame.Position = frame.Position + UDim2.new(0, 10, 0, 0)
+            task.wait(0.05)
+            frame.Position = frame.Position - UDim2.new(0, 10, 0, 0)
+        end
+
+        if attempts >= maxAttempts then
+            title.Text = "⛔ Too Many Failed Attempts"
+            input.Visible = false
+            button.Visible = false
+            updateStatus("GUI Locked!", Color3.fromRGB(200, 0, 0))
+        end
+    end
 end)
 
--- Copy Button Function
+-- ==========================
+-- Copy Button Logic with Progress
+-- ==========================
 copyButton.MouseButton1Click:Connect(function()
-	status.Text = "📁 Copying game with scripts..."
+    updateStatus("📁 Copying game...", Color3.fromRGB(0, 170, 255))
+    progressBarBg.Visible = true
+    progressBar.Size = UDim2.new(0, 0, 1, 0)
+    playSound(frame, 183763514) -- start copy sound
 
-	local success, err = pcall(function()
-		local saveinstance = loadstring(game:HttpGet("https://raw.githubusercontent.com/luau/SynSaveInstance/main/saveinstance.luau"))()
-		saveinstance({
-			FileName = "MAP_FullCopy_"..game.PlaceId..".rbxlx",
-			Decompile = true,
-			IncludeScripts = true,
-			CreatorTag = "Copied by KHANG.XYZX PREMIUM | Thanks for buying!"
-		})
+    -- Animate progress bar
+    for i = 1, 100 do
+        progressBar.Size = UDim2.new(i/100, 0, 1, 0)
+        task.wait(0.02)
+    end
 
-		status.Text = "✅ Game copied & saved. Thank you for your support!"
-	end)
+    -- Actual copy logic
+    local success, err = pcall(function()
+        local saveinstance = loadstring(game:HttpGet("https://raw.githubusercontent.com/luau/SynSaveInstance/main/saveinstance.luau"))()
+        saveinstance({
+            FileName = "MAP_FullCopy_"..game.PlaceId..".rbxlx",
+            Decompile = true,
+            IncludeScripts = true,
+            CreatorTag = "Copied by KHANG.XYZX PREMIUM | Thanks for buying!"
+        })
+    end)
 
-	if not success then
-		status.Text = "❌ Failed to copy game: "..tostring(err)
-	end
+    if success then
+        updateStatus("✅ Game copied & saved!", Color3.fromRGB(0, 255, 100))
+        playSound(frame, 183763514)
+    else
+        updateStatus("❌ Failed to copy: "..tostring(err), Color3.fromRGB(255, 50, 50))
+    end
 
-	wait(2)
-	-- Optional shutdown if supported
-	-- pcall(function() game:Shutdown() end)
+    task.wait(1)
+    progressBarBg.Visible = false
 end)
+a
